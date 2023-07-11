@@ -1,0 +1,250 @@
+#! /usr/bin/env python3
+
+import os
+import sys
+import pickle
+import readline
+from unilog import *
+
+
+def PrintLogo(ver, cred, lic):
+    print(f"{FG.CYAN}",end="")
+    print(f" _____ ___  ____   ___  ")
+    print(f"|_   _/ _ \|  _ \ / _ \ ")
+    print(f"  | || | | | | | | | | |")
+    print(f"  | || |_| | |_| | |_| |")
+    print(f"  |_| \___/|____/ \___/ ")
+    print(f"  {UTIL.RESET}{FG.MAGENTA}v{ver} by {cred}")
+    print(f"  licensed under {lic}{UTIL.RESET}")
+    print(f"")
+
+
+#########################
+### Class Definitions ###
+#########################
+
+class TODO:
+    VERSION     = "2.0.0"
+    CREDITS     = "luks"
+    LICENSE     = "GPL3.0"
+
+    TASKS       = []
+    FILEPTR     = "tasks.pickle"
+
+
+class TASK:
+    def __init__(self, index, title, status, comment):
+        self.index      = index
+        self.title      = title
+        self.status     = status
+        self.comment    = comment
+
+################
+### Commands ###
+################
+
+
+def ExitProgram():
+    ResetScreen()
+    exit(0)
+
+
+def ListEntries():
+    for task in TODO.TASKS:
+        status = f"{FG.GREEN}" if task.status else f"{FG.RED}"
+        print(f"[{task.index}]\t{status}{task.title}{UTIL.RESET}")
+
+
+def AddTask(args):
+    args = args.split(" ")[1:]
+
+    title   = " ".join(args)
+    comment = ""
+
+    if len(args) == 0:
+        title   = input("Enter Title:   ")
+        comment = input("Enter Comment: ")
+
+    task = TASK(len(TODO.TASKS), title, False, comment)
+    TODO.TASKS.append(task)
+
+
+def CheckTask(args):
+    index = GetTask(args)
+    if index < 0:
+        return
+    TODO.TASKS[index].status = False if TODO.TASKS[index].status else True
+
+
+def RemoveTask(args):
+    index = GetTask(args)
+    if index < 0:
+        return
+    del TODO.TASKS[index]
+    UpdateIndeces()
+
+
+def EditTask(args):
+    index = GetTask(args)
+    if index < 0:
+        return
+
+    TODO.TASKS[index].title     = Updater("Title",TODO.TASKS[index].title)
+    TODO.TASKS[index].comment   = Updater("Comment",TODO.TASKS[index].comment)
+
+
+def ShowTask(args):
+    index = GetTask(args)
+    if index < 0:
+        return
+
+    ResetScreen()
+    status = f"{FG.GREEN}" if TODO.TASKS[index].status else f"{FG.RED}"
+    print(f"{status}{UTIL.BOLD}{UTIL.REVERSE}[{index}]    {TODO.TASKS[index].title}{UTIL.RESET}")
+    print(f"")
+    print(f"{UTIL.BOLD}Title:{UTIL.RESET}")
+    print(f"{TODO.TASKS[index].title}")
+    print(f"")
+    print(f"{UTIL.BOLD}Comment:{UTIL.RESET}")
+    print(f"{TODO.TASKS[index].comment}")
+    print(f"")
+    input()
+
+
+#####################
+### Functionality ###
+#####################
+
+def Updater(field, text):
+    print(f"{UTIL.CLEARLINE}{UTIL.BOLD}{field}:\n{UTIL.RESET}{FG.BLACK}{text}",end="")
+    buffer = f"{UTIL.LEFT}" * len(text)
+    print(f"{buffer}{UTIL.RESET}",end="")
+    new_text = input()
+    return new_text if len(new_text) else text
+
+
+def GetTask(args):
+    args = args.split(" ")[1:]
+
+    index = 0
+    if len(args) == 0:
+        try:
+            index = int(input(f"Index ({len(TODO.TASKS)-1}): "))
+        except:
+            return -1
+    else:
+        try:
+            index = int(args[0])
+        except:
+            return -1
+
+    if index > len(TODO.TASKS)-1:
+        return -1
+
+    return index
+
+
+def UpdateIndeces():
+    index = 0
+    for task in TODO.TASKS:
+        task.index = index
+        index += 1
+
+
+
+def ResetScreen():
+    print(f"{UTIL.CLEAR}{UTIL.TOP}",end="")
+    PrintLogo(TODO.VERSION, TODO.CREDITS, TODO.LICENSE)
+
+
+def Usage():
+    print(f"Usage: todo.py [file]")
+    print(f"")
+    print(f"{UTIL.BOLD}Description:{UTIL.RESET}")
+    print(f"    Simple tool to manage todo lists")
+    print(f"")
+    print(f"{UTIL.BOLD}Commands:{UTIL.RESET}")
+    print(f"    help                show this menu")
+    print(f"    exit                closed the program")
+    print(f"    add                 add a new task")
+    print(f"    remove              remove task")
+    print(f"    check               change state of task")
+    print(f"    show                show more info about task")
+    print(f"    edit                edit task")
+    print(f"")
+
+
+def LoadTasks():
+    tasks = []
+    try:
+        with open(TODO.FILEPTR, "rb") as file:
+            tasks = pickle.load(file)
+    except:
+        Log(LVL.WARN, f"Error reading file: {UTIL.UNDERLINE}{TODO.FILEPTR}")
+    return tasks
+
+
+def SaveTasks():
+    with open(TODO.FILEPTR, "wb") as file:
+        pickle.dump(TODO.TASKS, file)    
+
+
+#################
+### Interface ###
+#################
+
+def Prompt():
+    ResetScreen() 
+    ListEntries()
+    cmd = input(f"{UTIL.BOLD}>>{UTIL.RESET} ")
+    base_command = cmd.split(" ")[0]
+    match base_command:
+        case "help":
+            ResetScreen()
+            Usage()
+            input("Press any key to continue ...")
+        
+        case "exit":
+            ExitProgram()
+
+        case "add":
+            AddTask(cmd)
+
+        case "check":
+            CheckTask(cmd)
+        
+        case "remove":
+            RemoveTask(cmd)
+
+        case "show":
+            ShowTask(cmd)
+        
+        case "edit":
+            EditTask(cmd)
+
+        case "":
+            pass
+        
+        case _:
+            Log(LVL.WARN, f"Unknown command: {UTIL.UNDERLINE}{base_command}")
+   
+    SaveTasks() 
+
+
+#######################
+### Initialization  ###
+#######################
+
+def main(argv):
+    TODO.TASKS = LoadTasks()
+
+    while True:
+        try:
+            Prompt()
+        except KeyboardInterrupt:
+            exit(0)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
+
