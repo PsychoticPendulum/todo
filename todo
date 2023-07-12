@@ -202,6 +202,9 @@ def DueTask(args):
     
     args = args.split(" ")
 
+    if len(args) < 3:
+        return
+
     TODO.TASKS[index].duedate = args[2]
 
 
@@ -310,8 +313,6 @@ def SaveTasks():
     with open(TODO.FILEPTR, "wb") as file:
         pickle.dump(TODO.TASKS, file)    
 
-
-# TODO: Add Due Date
 
 #################
 ### Interface ###
