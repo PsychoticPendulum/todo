@@ -5,6 +5,7 @@ import sys
 import pickle
 import readline
 from unilog import *
+from datetime import datetime
 
 
 def PrintLogo(ver, cred, lic):
@@ -33,11 +34,15 @@ class TODO:
 
 
 class TASK:
-    def __init__(self, index, title, status, comment):
-        self.index      = index
-        self.title      = title
-        self.status     = status
-        self.comment    = comment
+    def __init__(self, index, title, status, comment, notes, recurring, datetime):
+        self.index          = index
+        self.title          = title
+        self.status         = status
+        self.comment        = comment
+        self.notes          = notes
+        self.recurring      = recurring
+        self.datetime       = datetime
+
 
 ################
 ### Commands ###
@@ -51,8 +56,9 @@ def ExitProgram():
 
 def ListEntries():
     for task in TODO.TASKS:
-        status = f"{FG.GREEN}" if task.status else f"{FG.RED}"
-        print(f"[{task.index}]\t{status}{task.title}{UTIL.RESET}")
+        status  = f"{FG.GREEN}" if task.status else f"{FG.RED}"
+        rec     = f"{FG.YELLOW}*{UTIL.RESET}" if task.recurring else ""
+        print(f"[{task.index}]\t{rec}{status}{task.title}{UTIL.RESET}")
 
 
 def AddTask(args):
@@ -62,10 +68,11 @@ def AddTask(args):
     comment = ""
 
     if len(args) == 0:
-        title   = input("Enter Title:   ")
-        comment = input("Enter Comment: ")
+        title       = input("Enter Title:   ")
+        comment     = input("Enter Comment: ")
 
-    task = TASK(len(TODO.TASKS), title, False, comment)
+    # index, title, status, comment, recurring, datetime
+    task = TASK(len(TODO.TASKS), title, False, comment, False, GetDatetime())
     TODO.TASKS.append(task)
 
 
@@ -73,7 +80,33 @@ def CheckTask(args):
     index = GetTask(args)
     if index < 0:
         return
+    TODO.TASKS[index].datetime = GetDatetime()
     TODO.TASKS[index].status = False if TODO.TASKS[index].status else True
+
+
+def SetRecurring(args):
+    index = GetTask(args)
+    if index < 0:
+        return
+
+    args = args.split(" ")
+    if len(args) < 3:
+        return
+
+    match args[2]:
+        case "off":
+            TODO.TASKS[index].recurring = 0
+        case "daily":
+            TODO.TASKS[index].recurring = 1
+        case "weekly":
+            TODO.TASKS[index].recurring = 2
+        case "monthly":
+            TODO.TASKS[index].recurring = 3
+        case "yearly":
+            TODO.TASKS[index].recurring = 4
+        case _:
+            Log(LVL.WARN, f"Invalid recurring time. Possible are {FG.CYAN}off; daily; weekly; monthly; yearly")
+            return
 
 
 def RemoveTask(args):
@@ -108,6 +141,12 @@ def ShowTask(args):
     print(f"{UTIL.BOLD}Comment:{UTIL.RESET}")
     print(f"{TODO.TASKS[index].comment}")
     print(f"")
+    print(f"{UTIL.BOLD}Recurring:{UTIL.RESET}")
+    print(f"{GetRecString(TODO.TASKS[index].recurring)}")
+    print(f"")
+    print(f"{UTIL.BOLD}Checked Date:{UTIL.RESET}")
+    print(f"{TODO.TASKS[index].datetime}")
+    print(f"")
     input()
 
 
@@ -121,6 +160,28 @@ def Updater(field, text):
     print(f"{buffer}{UTIL.RESET}",end="")
     new_text = input()
     return new_text if len(new_text) else text
+
+
+def GetRecString(rec):
+    match rec:
+        case 0:
+            return "off"
+        case 1:
+            return "daily"
+        case 2:
+            return "weekly"
+        case 3:
+            return "monthly"
+        case 4:
+            return "yearly"
+        case _:
+            return "invalid value"
+
+
+def GetDatetime():
+    now = datetime.now()
+    current_date = now.strftime("%Y%m%d")
+    return int(current_date)
 
 
 def GetTask(args):
@@ -151,7 +212,6 @@ def UpdateIndeces():
         index += 1
 
 
-
 def ResetScreen():
     print(f"{UTIL.CLEAR}{UTIL.TOP}",end="")
     PrintLogo(TODO.VERSION, TODO.CREDITS, TODO.LICENSE)
@@ -170,6 +230,7 @@ def Usage():
     print(f"    remove              remove task")
     print(f"    check               change state of task")
     print(f"    show                show more info about task")
+    print(f"    rec                 set recurring (daily)")
     print(f"    edit                edit task")
     print(f"")
 
@@ -181,6 +242,20 @@ def LoadTasks():
             tasks = pickle.load(file)
     except:
         Log(LVL.WARN, f"Error reading file: {UTIL.UNDERLINE}{TODO.FILEPTR}")
+
+    for task in tasks:
+        task = MigrateTask(task)
+        datetime = GetDatetime()
+        match GetRecString(task.recurring):
+            case "daily":
+                task.status = bool(task.datetime + 1 < datetime)
+            case "weekly":
+                task.status = bool(task.datetime + 7 < datetime)
+            case "daily":
+                task.status = bool(task.datetime + 30 < datetime)
+            case "daily":
+                task.status = bool(task.datetime + 365 < datetime)
+
     return tasks
 
 
@@ -188,6 +263,19 @@ def SaveTasks():
     with open(TODO.FILEPTR, "wb") as file:
         pickle.dump(TODO.TASKS, file)    
 
+
+def MigrateTask(task):
+    index       = task.index
+    title       = task.title
+    status      = task.status
+    comment     = task.comment
+    notes       = []
+    recurring   = task.recurring
+    datetime    = task.checked_date
+    new_task = TASK(index, title, status, comment, notes, recurring, datetime)
+    return new_task
+
+# TODO: Add Due Date
 
 #################
 ### Interface ###
@@ -219,6 +307,9 @@ def Prompt():
         case "show":
             ShowTask(cmd)
         
+        case "rec":
+            SetRecurring(cmd)
+
         case "edit":
             EditTask(cmd)
 
