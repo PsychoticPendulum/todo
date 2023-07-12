@@ -34,7 +34,7 @@ class TODO:
 
 
 class TASK:
-    def __init__(self, index, title, status, comment, notes, recurring, datetime):
+    def __init__(self, index, title, status, comment, notes, recurring, datetime, duedate, priority):
         self.index          = index
         self.title          = title
         self.status         = status
@@ -42,6 +42,8 @@ class TASK:
         self.notes          = notes
         self.recurring      = recurring
         self.datetime       = datetime
+        self.duedate        = duedate
+        self.priority       = priority
 
 
 ################
@@ -56,23 +58,42 @@ def ExitProgram():
 
 def ListEntries():
     for task in TODO.TASKS:
-        status  = f"{FG.GREEN}" if task.status else f"{FG.RED}"
-        rec     = f"{FG.YELLOW}*{UTIL.RESET}" if task.recurring else ""
-        print(f"[{task.index}]\t{rec}{status}{task.title}{UTIL.RESET}")
+        status  = f"{FG.GREEN}" if task.status else f"{FG.YELLOW}"
+        rec     = f"{FG.CYAN}*{UTIL.RESET}" if task.recurring else ""
+
+        due     = f"{FG.CYAN}"
+        try:
+            if int(GetDatetime()) == int(task.duedate):
+                due += f"!" 
+            elif int(GetDatetime()) > int(task.duedate):
+                due += f"{FG.CYAN}!?"
+                status = f"{FG.RED}"
+        except:
+            pass
+
+        prio = ""
+        if task.priority > 0:
+            prio += f"{UTIL.BOLD}"
+        if task.priority > 1:
+            prio += f"{UTIL.UNDERLINE}"
+
+        print(f"[{task.index}]\t{rec}{due}{status}{prio}{task.title}{UTIL.RESET}")
 
 
 def AddTask(args):
     args = args.split(" ")[1:]
 
     title   = " ".join(args)
-    comment = ""
+    comment = title
+    duedate = "99999999"
 
     if len(args) == 0:
-        title       = input("Enter Title:   ")
-        comment     = input("Enter Comment: ")
+        title       = input("Enter Title:           ")
+        comment     = input("Enter Comment:         ")
+        duedate     = input("Due Date (YYYYMMDD):   ")
 
-    # index, title, status, comment, recurring, datetime
-    task = TASK(len(TODO.TASKS), title, False, comment, False, GetDatetime())
+    # index, title, status, comment, notes, recurring, datetime, duedate
+    task = TASK(len(TODO.TASKS), title, False, comment, [], False, GetDatetime(), duedate, 0)
     TODO.TASKS.append(task)
 
 
@@ -84,29 +105,55 @@ def CheckTask(args):
     TODO.TASKS[index].status = False if TODO.TASKS[index].status else True
 
 
+def MoveTask(args):
+    index = GetTask(args)
+    if index < 0:
+        return
+
+    args = args.split(" ")
+    new_position = 0
+    try:
+        new_position = int(args[2])
+    except:
+        return
+
+    task = TODO.TASKS[index]
+    del TODO.TASKS[index]
+    TODO.TASKS.insert(new_position, task)
+    UpdateIndeces()
+
+
 def SetRecurring(args):
     index = GetTask(args)
     if index < 0:
         return
 
     args = args.split(" ")
+    frequency = 0
     if len(args) < 3:
+        frequency = input(f"{FG.CYAN}(o)ff, (d)aily, (w)eekly, (m)onthly, (y)early{UTIL.RESET}: ")
+    else:
+        frequency = args[2]
+
+    recurring = ["o", "d", "w", "m", "y"]
+    for i in range(len(recurring)):
+        if recurring[i] == frequency:
+            TODO.TASKS[index].recurring = i
+            return
+
+    Log(LVL.WARN, f"Invalid recurring time.\nPossible are {FG.CYAN}(o)ff, (d)aily, (w)eekly, (m)onthly, (y)early")
+
+
+def SetPriority(args):
+    index = GetTask(args)
+    if index < 0:
         return
 
-    match args[2]:
-        case "off":
-            TODO.TASKS[index].recurring = 0
-        case "daily":
-            TODO.TASKS[index].recurring = 1
-        case "weekly":
-            TODO.TASKS[index].recurring = 2
-        case "monthly":
-            TODO.TASKS[index].recurring = 3
-        case "yearly":
-            TODO.TASKS[index].recurring = 4
-        case _:
-            Log(LVL.WARN, f"Invalid recurring time. Possible are {FG.CYAN}off; daily; weekly; monthly; yearly")
-            return
+    args = args.split(" ")
+    try:
+        TODO.TASKS[index].priority = int(args[2])
+    except:
+        return
 
 
 def RemoveTask(args):
@@ -117,13 +164,11 @@ def RemoveTask(args):
     UpdateIndeces()
 
 
-def EditTask(args):
+def AddNote(args):
     index = GetTask(args)
     if index < 0:
         return
-
-    TODO.TASKS[index].title     = Updater("Title",TODO.TASKS[index].title)
-    TODO.TASKS[index].comment   = Updater("Comment",TODO.TASKS[index].comment)
+    TODO.TASKS[index].notes.append(input("Add Note: "))
 
 
 def ShowTask(args):
@@ -132,22 +177,33 @@ def ShowTask(args):
         return
 
     ResetScreen()
-    status = f"{FG.GREEN}" if TODO.TASKS[index].status else f"{FG.RED}"
+    task = TODO.TASKS[index]
+    status = f"{FG.GREEN}" if task else f"{FG.RED}"
     print(f"{status}{UTIL.BOLD}{UTIL.REVERSE}[{index}]    {TODO.TASKS[index].title}{UTIL.RESET}")
     print(f"")
-    print(f"{UTIL.BOLD}Title:{UTIL.RESET}")
-    print(f"{TODO.TASKS[index].title}")
-    print(f"")
-    print(f"{UTIL.BOLD}Comment:{UTIL.RESET}")
-    print(f"{TODO.TASKS[index].comment}")
-    print(f"")
-    print(f"{UTIL.BOLD}Recurring:{UTIL.RESET}")
-    print(f"{GetRecString(TODO.TASKS[index].recurring)}")
-    print(f"")
-    print(f"{UTIL.BOLD}Checked Date:{UTIL.RESET}")
-    print(f"{TODO.TASKS[index].datetime}")
-    print(f"")
+    print(f"{UTIL.BOLD}Index:        {UTIL.RESET}{task.index}")
+    print(f"{UTIL.BOLD}Title:        {UTIL.RESET}{task.title}")
+    print(f"{UTIL.BOLD}Status:       {UTIL.RESET}{task.status}")
+    print(f"{UTIL.BOLD}Recurring:    {UTIL.RESET}{GetRecString(task.recurring)}")
+    print(f"{UTIL.BOLD}Due Date:     {UTIL.RESET}{task.duedate}")
+    print(f"{UTIL.BOLD}Priority:     {UTIL.RESET}{task.priority}")
+    print(f"{UTIL.BOLD}Comment:      {UTIL.RESET}{task.comment}")
+    print(f"{UTIL.BOLD}Notes:{UTIL.RESET}")
+    for note in task.notes:
+        print(f"- {note}")
+
     input()
+
+
+def DueTask(args):
+    index = GetTask(args)
+    if index < 0:
+        return
+    
+    args = args.split(" ")
+
+    TODO.TASKS[index].duedate = args[2]
+
 
 
 #####################
@@ -163,27 +219,16 @@ def Updater(field, text):
 
 
 def GetRecString(rec):
-    match rec:
-        case 0:
-            return "off"
-        case 1:
-            return "daily"
-        case 2:
-            return "weekly"
-        case 3:
-            return "monthly"
-        case 4:
-            return "yearly"
-        case _:
-            return "invalid value"
+    recurring = [ "off", "daily", "weekly", "monthly", "yearly" ]
+    if rec > len(recurring):
+        return "invalid value"
+    return recurring[rec]
 
 
 def GetDatetime():
     now = datetime.now()
     current_date = now.strftime("%Y%m%d")
     return int(current_date)
-
-
 def GetTask(args):
     args = args.split(" ")[1:]
 
@@ -227,11 +272,14 @@ def Usage():
     print(f"    help                show this menu")
     print(f"    exit                closed the program")
     print(f"    add                 add a new task")
-    print(f"    remove              remove task")
     print(f"    check               change state of task")
+    print(f"    move                move position of task")
+    print(f"    remove              remove task")
     print(f"    show                show more info about task")
-    print(f"    rec                 set recurring (daily)")
-    print(f"    edit                edit task")
+    print(f"    due                 set due date")
+    print(f"    note                add note")
+    print(f"    rec                 set recurring")
+    print(f"    prio                change priority of task")
     print(f"")
 
 
@@ -244,16 +292,15 @@ def LoadTasks():
         Log(LVL.WARN, f"Error reading file: {UTIL.UNDERLINE}{TODO.FILEPTR}")
 
     for task in tasks:
-        task = MigrateTask(task)
         datetime = GetDatetime()
-        match GetRecString(task.recurring):
-            case "daily":
+        match task.recurring:
+            case 1: # daily
                 task.status = bool(task.datetime + 1 < datetime)
-            case "weekly":
+            case 2: # weekly
                 task.status = bool(task.datetime + 7 < datetime)
-            case "daily":
+            case 3: # monthly
                 task.status = bool(task.datetime + 30 < datetime)
-            case "daily":
+            case 4: # yearly
                 task.status = bool(task.datetime + 365 < datetime)
 
     return tasks
@@ -263,17 +310,6 @@ def SaveTasks():
     with open(TODO.FILEPTR, "wb") as file:
         pickle.dump(TODO.TASKS, file)    
 
-
-def MigrateTask(task):
-    index       = task.index
-    title       = task.title
-    status      = task.status
-    comment     = task.comment
-    notes       = []
-    recurring   = task.recurring
-    datetime    = task.checked_date
-    new_task = TASK(index, title, status, comment, notes, recurring, datetime)
-    return new_task
 
 # TODO: Add Due Date
 
@@ -301,17 +337,26 @@ def Prompt():
         case "check":
             CheckTask(cmd)
         
+        case "move":
+            MoveTask(cmd)
+
         case "remove":
             RemoveTask(cmd)
 
         case "show":
             ShowTask(cmd)
+
+        case "due":
+            DueTask(cmd)
+
+        case "note":
+            AddNote(cmd)
         
         case "rec":
             SetRecurring(cmd)
 
-        case "edit":
-            EditTask(cmd)
+        case "prio":
+            SetPriority(cmd)
 
         case "":
             pass
@@ -327,6 +372,10 @@ def Prompt():
 #######################
 
 def main(argv):
+    if len(argv) > 0 and argv[0] == "--help":
+        Usage()
+        exit()
+
     TODO.TASKS = LoadTasks()
 
     while True:
