@@ -1,12 +1,26 @@
 #! /usr/bin/env python3
 
+# ======================================================================================================================
+
+    ###############
+    ### Imports ###
+    ###############
+
+# ======================================================================================================================
+
 import os
 import sys
 import pickle
 import readline
-from unilog import *
 from datetime import datetime
 
+try:
+    from unilog import *
+except:
+    print("ERROR: unilog library not installed")
+    exit(1)
+
+# ======================================================================================================================
 
 def PrintLogo(ver, cred, lic):
     print(f"{FG.CYAN}",end="")
@@ -19,19 +33,23 @@ def PrintLogo(ver, cred, lic):
     print(f"  licensed under {lic}{UTIL.RESET}")
     print(f"")
 
+# ======================================================================================================================
 
-#########################
-### Class Definitions ###
-#########################
+    #########################
+    ### Class Definitions ###
+    #########################
+
+# ======================================================================================================================
 
 class TODO:
-    VERSION     = "2.0.0"
+    VERSION     = "2.0.1"
     CREDITS     = "luks"
     LICENSE     = "GPL3.0"
 
     TASKS       = []
     FILEPTR     = "tasks.pickle"
 
+# ======================================================================================================================
 
 class TASK:
     def __init__(self, index, title, status, comment, notes, recurring, datetime, duedate, priority):
@@ -45,57 +63,37 @@ class TASK:
         self.duedate        = duedate
         self.priority       = priority
 
+# ======================================================================================================================
 
-################
-### Commands ###
-################
+    ################
+    ### Commands ###
+    ################
 
+# ======================================================================================================================
 
 def ExitProgram():
     ResetScreen()
     exit(0)
 
-
-def ListEntries():
-    for task in TODO.TASKS:
-        status  = f"{FG.GREEN}" if task.status else f"{FG.YELLOW}"
-        rec     = f"{FG.CYAN}*{UTIL.RESET}" if task.recurring else ""
-
-        due     = f"{FG.CYAN}"
-        try:
-            if int(GetDatetime()) == int(task.duedate):
-                due += f"!" 
-            elif int(GetDatetime()) > int(task.duedate):
-                due += f"{FG.CYAN}!?"
-                status = f"{FG.RED}"
-        except:
-            pass
-
-        prio = ""
-        if task.priority > 0:
-            prio += f"{UTIL.BOLD}"
-        if task.priority > 1:
-            prio += f"{UTIL.UNDERLINE}"
-
-        print(f"[{task.index}]\t{rec}{due}{status}{prio}{task.title}{UTIL.RESET}")
-
+# ======================================================================================================================
 
 def AddTask(args):
     args = args.split(" ")[1:]
 
     title   = " ".join(args)
     comment = title
-    duedate = "99999999"
+    duedate = str(GetDatetime())
 
     if len(args) == 0:
         title       = input("Enter Title:           ")
-        comment     = input("Enter Comment:         ")
         duedate     = input("Due Date (YYYYMMDD):   ")
+    comment     = input("Enter Comment:         ")
 
     # index, title, status, comment, notes, recurring, datetime, duedate
     task = TASK(len(TODO.TASKS), title, False, comment, [], False, GetDatetime(), duedate, 0)
     TODO.TASKS.append(task)
 
+# ======================================================================================================================
 
 def CheckTask(args):
     index = GetTask(args)
@@ -104,6 +102,20 @@ def CheckTask(args):
     TODO.TASKS[index].datetime = GetDatetime()
     TODO.TASKS[index].status = False if TODO.TASKS[index].status else True
 
+# ======================================================================================================================
+
+def SetPriority(args):
+    index = GetTask(args)
+    if index < 0:
+        return
+
+    args = args.split(" ")
+    try:
+        TODO.TASKS[index].priority = int(args[2])
+    except:
+        return
+
+# ======================================================================================================================
 
 def MoveTask(args):
     index = GetTask(args)
@@ -122,6 +134,30 @@ def MoveTask(args):
     TODO.TASKS.insert(new_position, task)
     UpdateIndeces()
 
+# ======================================================================================================================
+
+def RemoveTask(args):
+    index = GetTask(args)
+    if index < 0:
+        return
+    del TODO.TASKS[index]
+    UpdateIndeces()
+
+# ======================================================================================================================
+
+def DueTask(args):
+    index = GetTask(args)
+    if index < 0:
+        return
+    
+    args = args.split(" ")
+
+    if len(args) < 3:
+        return
+
+    TODO.TASKS[index].duedate = args[2]
+
+# ======================================================================================================================
 
 def SetRecurring(args):
     index = GetTask(args)
@@ -143,26 +179,7 @@ def SetRecurring(args):
 
     Log(LVL.WARN, f"Invalid recurring time.\nPossible are {FG.CYAN}(o)ff, (d)aily, (w)eekly, (m)onthly, (y)early")
 
-
-def SetPriority(args):
-    index = GetTask(args)
-    if index < 0:
-        return
-
-    args = args.split(" ")
-    try:
-        TODO.TASKS[index].priority = int(args[2])
-    except:
-        return
-
-
-def RemoveTask(args):
-    index = GetTask(args)
-    if index < 0:
-        return
-    del TODO.TASKS[index]
-    UpdateIndeces()
-
+# ======================================================================================================================
 
 def AddNote(args):
     index = GetTask(args)
@@ -170,6 +187,7 @@ def AddNote(args):
         return
     TODO.TASKS[index].notes.append(input("Add Note: "))
 
+# ======================================================================================================================
 
 def ShowTask(args):
     index = GetTask(args)
@@ -194,24 +212,38 @@ def ShowTask(args):
 
     input()
 
+# ======================================================================================================================
 
-def DueTask(args):
-    index = GetTask(args)
-    if index < 0:
-        return
-    
-    args = args.split(" ")
+    #####################
+    ### Functionality ###
+    #####################
 
-    if len(args) < 3:
-        return
+# ======================================================================================================================
 
-    TODO.TASKS[index].duedate = args[2]
+def ListEntries():
+    for task in TODO.TASKS:
+        status  = f"{FG.GREEN}" if task.status else f"{FG.YELLOW}"
+        rec     = f"{FG.CYAN}*{UTIL.RESET}" if task.recurring else ""
 
+        due     = f"{FG.CYAN}"
+        try:
+            if int(GetDatetime()) == int(task.duedate):
+                due += f"!" 
+            elif int(GetDatetime()) > int(task.duedate):
+                due += f"{FG.CYAN}!?"
+                status = f"{FG.RED}"
+        except:
+            pass
 
+        prio = ""
+        if task.priority > 0:
+            prio += f"{UTIL.BOLD}"
+        if task.priority > 1:
+            prio += f"{UTIL.UNDERLINE}"
 
-#####################
-### Functionality ###
-#####################
+        print(f"[{task.index}]\t{rec}{due}{status}{prio}{task.title}{UTIL.RESET}")
+
+# ======================================================================================================================
 
 def Updater(field, text):
     print(f"{UTIL.CLEARLINE}{UTIL.BOLD}{field}:\n{UTIL.RESET}{FG.BLACK}{text}",end="")
@@ -220,6 +252,7 @@ def Updater(field, text):
     new_text = input()
     return new_text if len(new_text) else text
 
+# ======================================================================================================================
 
 def GetRecString(rec):
     recurring = [ "off", "daily", "weekly", "monthly", "yearly" ]
@@ -227,11 +260,15 @@ def GetRecString(rec):
         return "invalid value"
     return recurring[rec]
 
+# ======================================================================================================================
 
 def GetDatetime():
     now = datetime.now()
     current_date = now.strftime("%Y%m%d")
     return int(current_date)
+
+# ======================================================================================================================
+
 def GetTask(args):
     args = args.split(" ")[1:]
 
@@ -252,6 +289,7 @@ def GetTask(args):
 
     return index
 
+# ======================================================================================================================
 
 def UpdateIndeces():
     index = 0
@@ -259,11 +297,13 @@ def UpdateIndeces():
         task.index = index
         index += 1
 
+# ======================================================================================================================
 
 def ResetScreen():
     print(f"{UTIL.CLEAR}{UTIL.TOP}",end="")
     PrintLogo(TODO.VERSION, TODO.CREDITS, TODO.LICENSE)
 
+# ======================================================================================================================
 
 def Usage():
     print(f"Usage: todo.py [file]")
@@ -274,17 +314,19 @@ def Usage():
     print(f"{UTIL.BOLD}Commands:{UTIL.RESET}")
     print(f"    help                show this menu")
     print(f"    exit                closed the program")
+    print(f"")
     print(f"    add                 add a new task")
     print(f"    check               change state of task")
+    print(f"    prio                change priority of task")
     print(f"    move                move position of task")
     print(f"    remove              remove task")
-    print(f"    show                show more info about task")
     print(f"    due                 set due date")
-    print(f"    note                add note")
     print(f"    rec                 set recurring")
-    print(f"    prio                change priority of task")
+    print(f"    note                add note")
+    print(f"    show                show more info about task")
     print(f"")
 
+# ======================================================================================================================
 
 def LoadTasks():
     tasks = []
@@ -294,29 +336,21 @@ def LoadTasks():
     except:
         Log(LVL.WARN, f"Error reading file: {UTIL.UNDERLINE}{TODO.FILEPTR}")
 
-    for task in tasks:
-        datetime = GetDatetime()
-        match task.recurring:
-            case 1: # daily
-                task.status = bool(task.datetime + 1 < datetime)
-            case 2: # weekly
-                task.status = bool(task.datetime + 7 < datetime)
-            case 3: # monthly
-                task.status = bool(task.datetime + 30 < datetime)
-            case 4: # yearly
-                task.status = bool(task.datetime + 365 < datetime)
-
     return tasks
 
+# ======================================================================================================================
 
 def SaveTasks():
     with open(TODO.FILEPTR, "wb") as file:
         pickle.dump(TODO.TASKS, file)    
 
+# ======================================================================================================================
 
-#################
-### Interface ###
-#################
+    #################
+    ### Interface ###
+    #################
+
+# ======================================================================================================================
 
 def Prompt():
     ResetScreen() 
@@ -367,15 +401,24 @@ def Prompt():
    
     SaveTasks() 
 
+# ======================================================================================================================
 
-#######################
-### Initialization  ###
-#######################
+    #######################
+    ### Initialization  ###
+    #######################
+
+# ======================================================================================================================
 
 def main(argv):
-    if len(argv) > 0 and argv[0] == "--help":
-        Usage()
-        exit()
+    if len(argv) > 0:
+        if argv[0] == "--help":
+            Usage()
+            exit()
+        elif argv[0] == "--version":
+            print(TODO.VERSION)
+            exit()
+        else:
+            TODO.FILEPTR = argv[0]
 
     TODO.TASKS = LoadTasks()
 
@@ -385,7 +428,9 @@ def main(argv):
         except KeyboardInterrupt:
             exit(0)
 
+# ======================================================================================================================
 
 if __name__ == "__main__":
     main(sys.argv[1:])
 
+# ======================================================================================================================
