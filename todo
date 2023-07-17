@@ -10,6 +10,7 @@
 
 import os
 import sys
+import json
 import pickle
 import readline
 from datetime import datetime
@@ -42,7 +43,7 @@ def PrintLogo(ver, cred, lic):
 # ======================================================================================================================
 
 class TODO:
-    VERSION     = "2.4.1"
+    VERSION     = "2.5.0"
     CREDITS     = "luks"
     LICENSE     = "GPL3.0"
 
@@ -52,7 +53,9 @@ class TODO:
 # ======================================================================================================================
 
 class OPTIONS:
-    SHOW_HIDDEN     = False
+    OPT = {
+        "show_hidden":      False
+    } 
 
 # ======================================================================================================================
 
@@ -244,7 +247,7 @@ def ShowTask(args):
 
 def ListEntries():
     for task in TODO.TASKS:
-        if task.recurring and task.status and not OPTIONS.SHOW_HIDDEN:
+        if task.recurring and task.status and not OPTIONS.OPT["show_hidden"]:
             continue
 
         status  = f"{FG.GREEN}{UTIL.STRIKETHROUGH}" if task.status else f"{FG.YELLOW}"
@@ -354,6 +357,8 @@ def Usage():
     print(f"{UTIL.BOLD}Commands:{UTIL.RESET}")
     print(f"    help                show this menu")
     print(f"    exit                closed the program")
+    print(f"    options             display all options and their values")
+    print(f"    set                 set an option")
     print(f"")
     print(f"    add                 add a new task")
     print(f"    check               change state of task")
@@ -396,6 +401,17 @@ def SaveTasks():
     ### Options ###
     ###############
 
+# ======================================================================================================================
+
+def DisplayOptions():
+    ResetScreen()
+    print(f"{UTIL.BOLD}Options:{UTIL.RESET}")
+    for option, value in OPTIONS.OPT.items():
+        buffer = " " * (16 - len(option))
+        print(f"{option}{buffer}{value}")
+    input()
+
+
 def SetOption(cmd):
     cmd = cmd.split(" ")[1:]
     
@@ -404,11 +420,32 @@ def SetOption(cmd):
 
     match cmd[0]:
         case "show_hidden":
-            OPTIONS.SHOW_HIDDEN = True if cmd[1] == "true" else False
+            OPTIONS.OPT["show_hidden"] = True if cmd[1] == "true" else False
         case _:
             Log(LVL.WARN, f"Unknown option: {UTIL.UNDERLINE}{cmd[0]}")
 
-# ======================================================================================================================
+    SaveOptions()
+
+
+def SaveOptions():
+    data = json.dumps(OPTIONS.OPT)
+    try:
+        file = open("settings.json", "w")
+        file.write(data)
+        file.close()
+    except:
+        Log(LVL.WARN, "Unable to save settings ...")
+
+
+def LoadOptions():
+    try:
+        file = open("settings.json", "r")
+        data = file.read()
+        file.close()
+        OPTIONS.OPT = json.loads(data)
+    except:
+        Log(LVL.WARN, "Couldn't read settings file ...")
+
 
 # ======================================================================================================================
 
@@ -432,35 +469,38 @@ def Prompt():
         case "exit":
             ExitProgram()
 
+        case "options":
+            DisplayOptions()
+
+        case "set":
+            SetOption(cmd)
+
         case "add":
             AddTask(cmd)
 
         case "check":
             CheckTask(cmd)
         
+        case "prio":
+            SetPriority(cmd)
+
         case "move":
             MoveTask(cmd)
 
         case "remove":
             RemoveTask(cmd)
 
-        case "show":
-            ShowTask(cmd)
-
         case "due":
             DueTask(cmd)
+
+        case "rec":
+            SetRecurring(cmd)
 
         case "note":
             AddNote(cmd)
         
-        case "rec":
-            SetRecurring(cmd)
-
-        case "prio":
-            SetPriority(cmd)
-
-        case "set":
-            SetOption(cmd)
+        case "show":
+            ShowTask(cmd)
 
         case "":
             pass
@@ -489,6 +529,7 @@ def main(argv):
         else:
             TODO.FILEPTR = argv[0]
 
+    LoadOptions()
     TODO.TASKS = LoadTasks()
 
     while True:
