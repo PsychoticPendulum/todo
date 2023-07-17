@@ -42,7 +42,7 @@ def PrintLogo(ver, cred, lic):
 # ======================================================================================================================
 
 class TODO:
-    VERSION     = "2.2.1"
+    VERSION     = "2.3.0"
     CREDITS     = "luks"
     LICENSE     = "GPL3.0"
 
@@ -142,11 +142,15 @@ def MoveTask(args):
 # ======================================================================================================================
 
 def SaveToHistory(task):
-    file = open("todo.history", "a")
+    if not os.path.isfile("history.csv"):
+        file = open("history.csv", "a")
+        file.write("datetime,title,comment,notes\n")
+        file.close()
+    file = open("history.csv", "a")
     log = f"{task.datetime},{task.title},{task.comment},"
     for note in task.notes:
         log += f"{note};"
-    file.write(log)
+    file.write(f"{log}\n")
     file.close()
 
 # ======================================================================================================================
@@ -389,7 +393,11 @@ def LoadTasks():
         Log(LVL.WARN, f"Error reading file: {UTIL.UNDERLINE}{TODO.FILEPTR}")
 
     for task in tasks:
-        if task.recurring and (GetDatetime() - task.datetime > 1):
+        timediff = GetDatetime() - task.datetime
+        if (task.recurring == 1 and (timediff >= 1)) \
+        or (task.recurring == 2 and (timediff >= 7)) \
+        or (task.recurring == 3 and (timediff >= 30)) \
+        or (task.recurring == 4 and (timediff >= 365)):
             task.status = False
             task.duedate = GetDatetime()
 
