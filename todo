@@ -42,7 +42,7 @@ def PrintLogo(ver, cred, lic):
 # ======================================================================================================================
 
 class TODO:
-    VERSION     = "2.3.0"
+    VERSION     = "2.4.0"
     CREDITS     = "luks"
     LICENSE     = "GPL3.0"
 
@@ -195,19 +195,13 @@ def SetRecurring(args):
         return
 
     args = args.split(" ")
-    frequency = 0
-    if len(args) < 3:
-        frequency = input(f"{FG.CYAN}(o)ff, (d)aily, (w)eekly, (m)onthly, (y)early{UTIL.RESET}: ")
-    else:
-        frequency = args[2]
 
-    recurring = ["o", "d", "w", "m", "y"]
-    for i in range(len(recurring)):
-        if recurring[i] == frequency:
-            TODO.TASKS[index].recurring = i
-            return
-
-    Log(LVL.WARN, f"Invalid recurring time.\nPossible are {FG.CYAN}(o)ff, (d)aily, (w)eekly, (m)onthly, (y)early")
+    try:
+        print(args)
+        input()
+        TODO.TASKS[index].recurring = int(args[2])
+    except:
+        return
 
 # ======================================================================================================================
 
@@ -232,7 +226,7 @@ def ShowTask(args):
     print(f"{UTIL.BOLD}Index:        {UTIL.RESET}{task.index}")
     print(f"{UTIL.BOLD}Title:        {UTIL.RESET}{task.title}")
     print(f"{UTIL.BOLD}Status:       {UTIL.RESET}{task.status}")
-    print(f"{UTIL.BOLD}Recurring:    {UTIL.RESET}{GetRecString(task.recurring)}")
+    print(f"{UTIL.BOLD}Recurring:    {UTIL.RESET}Every {task.recurring} days")
     print(f"{UTIL.BOLD}Due Date:     {UTIL.RESET}{task.duedate}")
     print(f"{UTIL.BOLD}Priority:     {UTIL.RESET}{task.priority}")
     print(f"{UTIL.BOLD}Comment:      {UTIL.RESET}{task.comment}")
@@ -291,14 +285,6 @@ def Updater(field, text):
     print(f"{buffer}{UTIL.RESET}",end="")
     new_text = input()
     return new_text if len(new_text) else text
-
-# ======================================================================================================================
-
-def GetRecString(rec):
-    recurring = [ "off", "daily", "weekly", "monthly", "yearly" ]
-    if rec > len(recurring):
-        return "invalid value"
-    return recurring[rec]
 
 # ======================================================================================================================
 
@@ -394,10 +380,7 @@ def LoadTasks():
 
     for task in tasks:
         timediff = GetDatetime() - task.datetime
-        if (task.recurring == 1 and (timediff >= 1)) \
-        or (task.recurring == 2 and (timediff >= 7)) \
-        or (task.recurring == 3 and (timediff >= 30)) \
-        or (task.recurring == 4 and (timediff >= 365)):
+        if timediff >= task.recurring:
             task.status = False
             task.duedate = GetDatetime()
 
