@@ -336,6 +336,11 @@ def LoadTasks():
     except:
         Log(LVL.WARN, f"Error reading file: {UTIL.UNDERLINE}{TODO.FILEPTR}")
 
+    for task in tasks:
+        if task.recurring and (GetDatetime() - task.datetime > 1):
+            task.status = False
+            task.duedate = GetDatetime()
+
     return tasks
 
 # ======================================================================================================================
