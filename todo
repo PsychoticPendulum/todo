@@ -42,7 +42,7 @@ def PrintLogo(ver, cred, lic):
 # ======================================================================================================================
 
 class TODO:
-    VERSION     = "2.4.0"
+    VERSION     = "2.4.1"
     CREDITS     = "luks"
     LICENSE     = "GPL3.0"
 
@@ -197,8 +197,6 @@ def SetRecurring(args):
     args = args.split(" ")
 
     try:
-        print(args)
-        input()
         TODO.TASKS[index].recurring = int(args[2])
     except:
         return
