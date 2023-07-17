@@ -243,6 +243,8 @@ def ShowTask(args):
 
 def ListEntries():
     for task in TODO.TASKS:
+        if task.recurring and task.status:
+            continue
         status  = f"{FG.GREEN}{UTIL.STRIKETHROUGH}" if task.status else f"{FG.YELLOW}"
         rec     = f"{FG.CYAN}*{UTIL.RESET}" if task.recurring else ""
 
@@ -256,8 +258,9 @@ def ListEntries():
         except:
             pass
 
-        remaining_time = ""
-        if int(task.duedate) - int(GetDatetime()) < 7:
+        datetime = int(GetDatetime())
+        remaining_time = f"({int(task.duedate)-datetime} days)"
+        if int(task.duedate) - datetime < 7:
             remaining_time = f"({DateToDay(str(task.duedate))})"
 
         prio = ""
