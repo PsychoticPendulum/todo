@@ -357,8 +357,8 @@ def Usage():
     print(f"{UTIL.BOLD}Commands:{UTIL.RESET}")
     print(f"    help                show this menu")
     print(f"    exit                closed the program")
-    print(f"    options             display all options and their values")
-    print(f"    set                 set an option")
+    print(f"    settings            display all settings and their values")
+    print(f"    set                 set an settings")
     print(f"")
     print(f"    add                 add a new task")
     print(f"    check               change state of task")
@@ -397,22 +397,22 @@ def SaveTasks():
 
 # ======================================================================================================================
 
-    ###############
-    ### Options ###
-    ###############
+    ################
+    ### Settings ###
+    ################
 
 # ======================================================================================================================
 
-def DisplayOptions():
+def DisplaySettings():
     ResetScreen()
-    print(f"{UTIL.BOLD}Options:{UTIL.RESET}")
+    print(f"{UTIL.BOLD}Settings:{UTIL.RESET}")
     for option, value in OPTIONS.OPT.items():
         buffer = " " * (16 - len(option))
         print(f"{option}{buffer}{value}")
     input()
 
 
-def SetOption(cmd):
+def SetSettings(cmd):
     cmd = cmd.split(" ")[1:]
     
     if len(cmd) < 2:
@@ -424,10 +424,10 @@ def SetOption(cmd):
         case _:
             Log(LVL.WARN, f"Unknown option: {UTIL.UNDERLINE}{cmd[0]}")
 
-    SaveOptions()
+    SaveSettings()
 
 
-def SaveOptions():
+def SaveSettings():
     data = json.dumps(OPTIONS.OPT)
     try:
         file = open("settings.json", "w")
@@ -437,7 +437,7 @@ def SaveOptions():
         Log(LVL.WARN, "Unable to save settings ...")
 
 
-def LoadOptions():
+def LoadSettings():
     try:
         file = open("settings.json", "r")
         data = file.read()
@@ -469,11 +469,11 @@ def Prompt():
         case "exit":
             ExitProgram()
 
-        case "options":
-            DisplayOptions()
+        case "settings":
+            DisplaySettings()
 
         case "set":
-            SetOption(cmd)
+            SetSettings(cmd)
 
         case "add":
             AddTask(cmd)
@@ -529,7 +529,7 @@ def main(argv):
         else:
             TODO.FILEPTR = argv[0]
 
-    LoadOptions()
+    LoadSettings()
     TODO.TASKS = LoadTasks()
 
     while True:
