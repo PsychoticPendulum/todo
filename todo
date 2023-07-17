@@ -42,7 +42,7 @@ def PrintLogo(ver, cred, lic):
 # ======================================================================================================================
 
 class TODO:
-    VERSION     = "2.2.0"
+    VERSION     = "2.2.1"
     CREDITS     = "luks"
     LICENSE     = "GPL3.0"
 
@@ -268,6 +268,8 @@ def ListEntries():
         remaining_time = f"({int(task.duedate)-datetime} days)"
         if int(task.duedate) - datetime < 7:
             remaining_time = f"({DateToDay(str(task.duedate))})"
+            if int(task.duedate) == datetime:
+                remaining_time = f"({UTIL.UNDERLINE}Today{UTIL.RESET})"
 
         prio = ""
         if task.priority > 0:
