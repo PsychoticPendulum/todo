@@ -301,17 +301,18 @@ def ListEntries():
 
         due     = f"{FG.CYAN}"
         try:
-            if int(GetDatetime()) == int(task.duedate):
-                due += f"!" 
-            elif int(GetDatetime()) > int(task.duedate):
-                due += f"{FG.CYAN}!?"
-                status = f"{FG.RED}"
+            if not task.status:
+                if int(GetDatetime()) == int(task.duedate):
+                    due += f"!" 
+                elif int(GetDatetime()) > int(task.duedate):
+                    due += f"{FG.CYAN}!?"
+                    status = f"{FG.RED}"
         except:
             pass
 
         datetime = int(GetDatetime())
         remaining_time = f"({int(task.duedate)-datetime} days)"
-        if int(task.duedate) - datetime < 7:
+        if int(task.duedate) - datetime < 7 and int(task.duedate) - datetime > -1:
             remaining_time = f"({DateToDay(str(task.duedate))})"
             if int(task.duedate) == datetime:
                 remaining_time = f"({UTIL.UNDERLINE}Today{UTIL.RESET})"
