@@ -43,7 +43,7 @@ def PrintLogo(ver, cred, lic):
 # ======================================================================================================================
 
 class TODO:
-    VERSION     = "2.5.0"
+    VERSION     = "2.5.1"
     CREDITS     = "luks"
     LICENSE     = "GPL3.0"
 
@@ -98,7 +98,7 @@ def AddTask(args):
     comment     = input("Enter Comment:         ")
 
     # index, title, status, comment, notes, recurring, datetime, duedate
-    task = TASK(len(TODO.TASKS), title, False, comment, [], False, GetDatetime(), duedate, 0)
+    task = TASK(len(TODO.TASKS), title, False, comment, [], 0, GetDatetime(), duedate, 0)
     TODO.TASKS.append(task)
 
 # ======================================================================================================================
@@ -382,8 +382,8 @@ def LoadTasks():
         Log(LVL.WARN, f"Error reading file: {UTIL.UNDERLINE}{TODO.FILEPTR}")
 
     for task in tasks:
-        timediff = GetDatetime() - task.datetime
-        if timediff >= task.recurring:
+        timediff = GetDatetime() - int(task.duedate)
+        if timediff >= task.recurring and task.recurring != 0:
             task.status = False
             task.duedate = GetDatetime()
 
@@ -458,9 +458,9 @@ def LoadSettings():
 def Prompt():
     ResetScreen() 
     ListEntries()
-    cmd = input(f"{UTIL.BOLD}>>{UTIL.RESET} ").lower()
+    cmd = input(f"{UTIL.BOLD}>>{UTIL.RESET} ")
     base_command = cmd.split(" ")[0]
-    match base_command:
+    match base_command.lower():
         case "help":
             ResetScreen()
             Usage()
@@ -542,5 +542,3 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv[1:])
-
-# ======================================================================================================================
