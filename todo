@@ -86,6 +86,10 @@ def ExitProgram():
 # ======================================================================================================================
 
 def AddTask(args):
+    if args[-1] == "?":
+        HowTo("add <title>","add Do the dishes","Adds a new task titled 'Do the dishes'")
+        return
+
     args = args.split(" ")[1:]
 
     title   = " ".join(args)
@@ -93,17 +97,19 @@ def AddTask(args):
     duedate = str(GetDatetime())
 
     if len(args) == 0:
-        title       = input("Enter Title:           ")
-        duedate     = input("Due Date (YYYYMMDD):   ")
-    comment     = input("Enter Comment:         ")
+        return
 
     # index, title, status, comment, notes, recurring, datetime, duedate
-    task = TASK(len(TODO.TASKS), title, False, comment, [], 0, GetDatetime(), duedate, 0)
+    task = TASK(len(TODO.TASKS), title, False, "", [], 0, GetDatetime(), duedate, 0)
     TODO.TASKS.append(task)
 
 # ======================================================================================================================
 
 def CheckTask(args):
+    if args[-1] == "?":
+        HowTo("check <index>","check 0","Checkes or unchecks task 0")
+        return
+
     index = GetTask(args)
     if index < 0:
         return
@@ -113,6 +119,10 @@ def CheckTask(args):
 # ======================================================================================================================
 
 def SetPriority(args):
+    if args[-1] == "?":
+        HowTo("prio <index> <prio>","prio 0 2","Sets priority of task 0 to 2. Prios: 0, 1, 2")
+        return
+
     index = GetTask(args)
     if index < 0:
         return
@@ -126,6 +136,10 @@ def SetPriority(args):
 # ======================================================================================================================
 
 def MoveTask(args):
+    if args[-1] == "?":
+        HowTo("move <current index> <new index>","move 0 4","Moves task 0 to position 4")
+        return
+
     index = GetTask(args)
     if index < 0:
         return
@@ -144,21 +158,11 @@ def MoveTask(args):
 
 # ======================================================================================================================
 
-def SaveToHistory(task):
-    if not os.path.isfile("history.csv"):
-        file = open("history.csv", "a")
-        file.write("datetime,title,comment,notes\n")
-        file.close()
-    file = open("history.csv", "a")
-    log = f"{task.datetime},{task.title},{task.comment},"
-    for note in task.notes:
-        log += f"{note};"
-    file.write(f"{log}\n")
-    file.close()
-
-# ======================================================================================================================
-
 def RemoveTask(args):
+    if args[-1] == "?":
+        HowTo("remove <index>","remove 0","Removes task 0")
+        return
+
     index = GetTask(args)
     if index < 0:
         return
@@ -169,6 +173,11 @@ def RemoveTask(args):
 # ======================================================================================================================
 
 def DueTask(args):
+    if args[-1] == "?":
+        HowTo("due <index> <date>","due 0 20240101","Sets task 0 to be due on January 1st 2024")
+        HowTo("due <index> <[+-]days>","due 0 +5","Moves due date of task 0 5 days into the future")
+        return
+
     index = GetTask(args)
     if index < 0:
         return
@@ -193,6 +202,10 @@ def DueTask(args):
 # ======================================================================================================================
 
 def SetRecurring(args):
+    if args[-1] == "?":
+        HowTo("rec <index> <frequency>","rec 0 7","Sets task 0 to reopen every 7 days")
+        return
+
     index = GetTask(args)
     if index < 0:
         return
@@ -207,14 +220,25 @@ def SetRecurring(args):
 # ======================================================================================================================
 
 def AddNote(args):
+    if args[-1] == "?":
+        HowTo("note <index> <content","note 0 hello world","Adds 'hello world' as note to task 0")
+        return
+
     index = GetTask(args)
     if index < 0:
         return
-    TODO.TASKS[index].notes.append(input("Add Note: "))
+
+    note = " ".join(args.split(" ")[2:])
+
+    TODO.TASKS[index].notes.append(note)
 
 # ======================================================================================================================
 
 def ShowTask(args):
+    if args[-1] == "?":
+        HowTo("show <index>","show 0","Shows info about task 0")
+        return
+
     index = GetTask(args)
     if index < 0:
         return
@@ -245,6 +269,28 @@ def ShowTask(args):
 
 # ======================================================================================================================
 
+def SaveToHistory(task):
+    if not os.path.isfile("history.csv"):
+        file = open("history.csv", "a")
+        file.write("datetime,title,comment,notes\n")
+        file.close()
+    file = open("history.csv", "a")
+    log = f"{task.datetime},{task.title},{task.comment},"
+    for note in task.notes:
+        log += f"{note};"
+    file.write(f"{log}\n")
+    file.close()
+
+# ======================================================================================================================
+
+def HowTo(usage, example, description):
+    print(f"{UTIL.BOLD}Usage:        {UTIL.RESET}{usage}")
+    print(f"{UTIL.BOLD}Example:      {UTIL.RESET}{example}")
+    print(f"{UTIL.BOLD}Description:  {UTIL.RESET}{description}")
+    input()
+
+# ======================================================================================================================
+
 def ListEntries():
     for task in TODO.TASKS:
         if task.recurring and task.status and not OPTIONS.OPT["show_hidden"]:
@@ -269,6 +315,8 @@ def ListEntries():
             remaining_time = f"({DateToDay(str(task.duedate))})"
             if int(task.duedate) == datetime:
                 remaining_time = f"({UTIL.UNDERLINE}Today{UTIL.RESET})"
+            elif int(task.duedate) == datetime + 1:
+                remaining_time = f"(Tomorrow)"
 
         prio = ""
         if task.priority > 0:
@@ -298,8 +346,11 @@ def GetDatetime():
 
 def DateToDay(date):
     date_format = "%Y%m%d"
-    date        = datetime.strptime(date, date_format)
-    weekday     = date.weekday()
+    try:
+        date        = datetime.strptime(date, date_format)
+        weekday     = date.weekday()
+    except:
+        weekday = -1
     match int(weekday):
         case 0: return "Monday"
         case 1: return "Tuesday"
@@ -308,7 +359,7 @@ def DateToDay(date):
         case 4: return "Friday"
         case 5: return "Saturday"
         case 6: return "Sunday"
-        case _: return "Christmas"
+        case _: return "undefined"
 
 # ======================================================================================================================
 
