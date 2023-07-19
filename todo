@@ -313,12 +313,15 @@ def ListEntries():
 
         datetime = int(GetDatetime())
         remaining_time = f"({int(task.duedate)-datetime} days)"
-        if int(task.duedate) - datetime < 7 and int(task.duedate) - datetime > -1:
-            remaining_time = f"({DateToDay(str(task.duedate))})"
-            if int(task.duedate) == datetime:
-                remaining_time = f"({UTIL.UNDERLINE}Today{UTIL.RESET})"
-            elif int(task.duedate) == datetime + 1:
-                remaining_time = f"(Tomorrow)"
+        if int(task.duedate) - datetime >= 0:
+            if int(task.duedate) - datetime < 7 and int(task.duedate):
+                remaining_time = f"({DateToDay(str(task.duedate))})"
+                if int(task.duedate) == datetime:
+                    remaining_time = f"({UTIL.UNDERLINE}Today{UTIL.RESET})"
+                elif int(task.duedate) == datetime + 1:
+                    remaining_time = f"(Tomorrow)"
+        else:
+            remaining_time = ""
 
         prio = ""
         if task.priority > 0:
