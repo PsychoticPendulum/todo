@@ -333,15 +333,6 @@ def ListEntries():
 
 # ======================================================================================================================
 
-def Updater(field, text):
-    print(f"{UTIL.CLEARLINE}{UTIL.BOLD}{field}:\n{UTIL.RESET}{FG.BLACK}{text}",end="")
-    buffer = f"{UTIL.LEFT}" * len(text)
-    print(f"{buffer}{UTIL.RESET}",end="")
-    new_text = input("Press any key to continue ...")
-    return new_text if len(new_text) else text
-
-# ======================================================================================================================
-
 def GetDatetime():
     now = datetime.now()
     current_date = now.strftime("%Y%m%d")
