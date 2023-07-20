@@ -300,6 +300,10 @@ def ListEntries():
         status  = f"{FG.GREEN}{UTIL.STRIKETHROUGH}" if task.status else f"{FG.YELLOW}"
         rec     = f"{FG.CYAN}*{UTIL.RESET}" if task.recurring else ""
 
+        style = ""
+        if GetDatetime() == int(task.duedate):
+            style = f"{UTIL.BOLD}"
+
         due     = f"{FG.CYAN}"
         try:
             if not task.status:
@@ -311,25 +315,22 @@ def ListEntries():
         except:
             pass
 
-        datetime = int(GetDatetime())
-        remaining_time = f"({int(task.duedate)-datetime} days)"
-        if int(task.duedate) - datetime >= 0:
-            if int(task.duedate) - datetime < 7 and int(task.duedate):
-                remaining_time = f"({DateToDay(str(task.duedate))})"
-                if int(task.duedate) == datetime:
-                    remaining_time = f"({UTIL.UNDERLINE}Today{UTIL.RESET})"
-                elif int(task.duedate) == datetime + 1:
-                    remaining_time = f"(Tomorrow)"
-        else:
+        
+        datetime = GetDatetime()
+        timediff = int(task.duedate) - datetime
+        remaining_time = f"({timediff} days)"
+        if 0 <= timediff < 7:
+            remaining_time = f"({UTIL.UNDERLINE}{DateToDay(task.duedate)}){UTIL.RESET}"
+        if task.status:
             remaining_time = ""
 
         prio = ""
         if task.priority > 0:
-            prio += f"{UTIL.BOLD}"
-        if task.priority > 1:
             prio += f"{UTIL.UNDERLINE}"
+        if task.priority > 1:
+            prio += f"{UTIL.REVERSE}"
 
-        print(f"[{task.index}]\t{rec}{due}{status}{prio}{task.title}{UTIL.RESET} {remaining_time}")
+        print(f"[{task.index}]\t{rec}{due}{status}{prio}{style}{task.title}{UTIL.RESET} {remaining_time}")
 
 # ======================================================================================================================
 
@@ -347,6 +348,12 @@ def DateToDay(date):
         weekday     = date.weekday()
     except:
         weekday = -1
+
+    if date == GetDatetime():
+        return "Today"
+    elif date == GetDatetime() + 1:
+        return "Tomorrow"
+
     match int(weekday):
         case 0: return "Monday"
         case 1: return "Tuesday"
