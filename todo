@@ -43,7 +43,7 @@ def PrintLogo(ver, cred, lic):
 # ======================================================================================================================
 
 class TODO:
-    VERSION     = "2.5.3"
+    VERSION     = "2.5.7"
     CREDITS     = "luks"
     LICENSE     = "GPL3.0"
 
@@ -330,7 +330,7 @@ def ListEntries():
         if task.priority > 1:
             prio += f"{UTIL.REVERSE}"
 
-        print(f"[{task.index}]\t{rec}{due}{status}{prio}{style}{task.title}{UTIL.RESET} {remaining_time}")
+        print(f"[{task.index}]\t{rec}{due}{status}{prio}{style}task.title}{UTIL.RESET} {remaining_time}")
 
 # ======================================================================================================================
 
