@@ -43,12 +43,14 @@ def PrintLogo(ver, cred, lic):
 # ======================================================================================================================
 
 class TODO:
-    VERSION     = "2.5.7"
+    VERSION     = "2.6.4"
     CREDITS     = "luks"
     LICENSE     = "GPL3.0"
 
     TASKS       = []
-    FILEPTR     = "tasks.pickle"
+    BASEPATH    = f"/home/{os.getlogin()}/.config/todo/"
+    FILEPTR     = f"{BASEPATH}tasks.pickle"
+    SETTINGSPTR = f"{BASEPATH}settings.json"
 
 # ======================================================================================================================
 
@@ -307,9 +309,7 @@ def ListEntries():
         due     = f"{FG.CYAN}"
         try:
             if not task.status:
-                if int(GetDatetime()) == int(task.duedate):
-                    due += f"!" 
-                elif int(GetDatetime()) > int(task.duedate):
+                if int(GetDatetime()) > int(task.duedate):
                     due += f"{FG.CYAN}!?"
                     status = f"{FG.RED}"
         except:
@@ -320,7 +320,7 @@ def ListEntries():
         timediff = int(task.duedate) - datetime
         remaining_time = f"({timediff} days)"
         if 0 <= timediff < 7:
-            remaining_time = f"({UTIL.UNDERLINE}{DateToDay(task.duedate)}){UTIL.RESET}"
+            remaining_time = f"({UTIL.UNDERLINE}{DateToDay(task.duedate)}{UTIL.RESET})"
         if task.status:
             remaining_time = ""
 
@@ -330,7 +330,7 @@ def ListEntries():
         if task.priority > 1:
             prio += f"{UTIL.REVERSE}"
 
-        print(f"[{task.index}]\t{rec}{due}{status}{prio}{style}task.title}{UTIL.RESET} {remaining_time}")
+        print(f"[{task.index}]\t{rec}{due}{status}{prio}{style}{task.title}{UTIL.RESET} {remaining_time}")
 
 # ======================================================================================================================
 
@@ -342,17 +342,17 @@ def GetDatetime():
 # ======================================================================================================================
 
 def DateToDay(date):
+    if int(date) == GetDatetime():
+        return "Today"
+    elif int(date) == GetDatetime() + 1:
+        return "Tomorrow"
+
     date_format = "%Y%m%d"
     try:
         date        = datetime.strptime(date, date_format)
         weekday     = date.weekday()
     except:
         weekday = -1
-
-    if date == GetDatetime():
-        return "Today"
-    elif date == GetDatetime() + 1:
-        return "Tomorrow"
 
     match int(weekday):
         case 0: return "Monday"
@@ -457,6 +457,12 @@ def SaveTasks():
 
 # ======================================================================================================================
 
+def CheckDirectories():
+    if not os.path.isdir(TODO.BASEPATH):
+        os.makedirs(TODO.BASEPATH)
+
+# ======================================================================================================================
+
 def DisplaySettings():
     ResetScreen()
     print(f"{UTIL.BOLD}Settings:{UTIL.RESET}")
@@ -465,6 +471,7 @@ def DisplaySettings():
         print(f"{option}{buffer}{value}")
     input("Press any key to continue ...")
 
+# ======================================================================================================================
 
 def SetSettings(cmd):
     cmd = cmd.split(" ")[1:]
@@ -480,20 +487,22 @@ def SetSettings(cmd):
 
     SaveSettings()
 
+# ======================================================================================================================
 
 def SaveSettings():
     data = json.dumps(OPTIONS.OPT)
     try:
-        file = open("settings.json", "w")
+        file = open(TODO.SETTINGSPTR, "w")
         file.write(data)
         file.close()
     except:
         Log(LVL.WARN, "Unable to save settings ...")
 
+# ======================================================================================================================
 
 def LoadSettings():
     try:
-        file = open("settings.json", "r")
+        file = open(TODO.SETTINGSPTR, "r")
         data = file.read()
         file.close()
         OPTIONS.OPT = json.loads(data)
@@ -582,7 +591,8 @@ def main(argv):
             exit()
         else:
             TODO.FILEPTR = argv[0]
-
+    
+    CheckDirectories()
     LoadSettings()
     TODO.TASKS = LoadTasks()
 
