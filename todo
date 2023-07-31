@@ -13,7 +13,7 @@ import sys
 import json
 import pickle
 import readline
-from datetime import datetime
+from datetime import datetime, timedelta
 
 try:
     from unilog import *
@@ -192,9 +192,9 @@ def DueTask(args):
 
     try:
         if args[2][0] == "+":
-            TODO.TASKS[index].duedate = int(TODO.TASKS[index].duedate) + int(args[2].split("+")[1])
+            TODO.TASKS[index].duedate = CalculateDate(int(TODO.TASKS[index].duedate), int(args[2].split("+")[1]))
         elif args[2][0] == "-":
-            TODO.TASKS[index].duedate = int(TODO.TASKS[index].duedate) - int(args[2].split("-")[1])
+            TODO.TASKS[index].duedate = CalculateDate(int(TODO.TASKS[index].duedate), -int(args[2].split("-")[1]))
         elif args[2][0] == ".":
             TODO.TASKS[index].duedate = int(GetDatetime())
         else:
@@ -317,7 +317,7 @@ def ListEntries():
 
         
         datetime = GetDatetime()
-        timediff = int(task.duedate) - datetime
+        timediff = GetDifferenceInDays(int(task.duedate), int(datetime))
         remaining_time = f"({timediff} days)"
         if 0 <= timediff < 7:
             remaining_time = f"({UTIL.UNDERLINE}{DateToDay(task.duedate)}{UTIL.RESET})"
@@ -338,6 +338,31 @@ def GetDatetime():
     now = datetime.now()
     current_date = now.strftime("%Y%m%d")
     return int(current_date)
+
+# ======================================================================================================================
+
+def CalculateDate(date, delta):
+    date_format = "%Y%m%d"
+    try:
+        date        = datetime.strptime(str(date), date_format)
+        date        = date + timedelta(days=delta)
+        return      date.strftime("%Y%m%d")
+    except:
+        Log(LVL.WARN, "Invalid date")
+        return date
+
+# ======================================================================================================================
+
+def GetDifferenceInDays(date0, date1):
+    date_format = "%Y%m%d"
+    try:
+        date0       = datetime.strptime(str(date0), date_format)
+        date1       = datetime.strptime(str(date1), date_format)
+        diff        = date0 - date1
+        return int(diff.days)
+    except:
+        Log(LVL.WARN, f"Invalid due date: {date1}")
+        return 0
 
 # ======================================================================================================================
 
