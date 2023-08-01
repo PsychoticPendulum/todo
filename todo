@@ -43,7 +43,7 @@ def PrintLogo(ver, cred, lic):
 # ======================================================================================================================
 
 class TODO:
-    VERSION     = "2.6.7"
+    VERSION     = "2.6.8"
     CREDITS     = "luks"
     LICENSE     = "GPL3.0"
 
@@ -367,7 +367,7 @@ def GetDifferenceInDays(date0, date1):
 # ======================================================================================================================
 
 def DatetimeToDate(date):
-    date_object = datetime.strptime(date, "%Y%m%d")
+    date_object = datetime.strptime(str(date), "%Y%m%d")
     return date_object.strftime("%B %d %Y")
 
 # ======================================================================================================================
