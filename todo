@@ -43,7 +43,7 @@ def PrintLogo(ver, cred, lic):
 # ======================================================================================================================
 
 class TODO:
-    VERSION     = "2.6.9"
+    VERSION     = "2.6.10"
     CREDITS     = "luks"
     LICENSE     = "GPL3.0"
 
@@ -51,6 +51,7 @@ class TODO:
     BASEPATH    = f"/home/{os.getlogin()}/.config/todo/"
     FILEPTR     = f"{BASEPATH}tasks.pickle"
     SETTINGSPTR = f"{BASEPATH}settings.json"
+    HISTPTR     = f"{BASEPATH}history.csv"
 
 # ======================================================================================================================
 
@@ -280,11 +281,11 @@ def ShowTask(args):
 # ======================================================================================================================
 
 def SaveToHistory(task):
-    if not os.path.isfile("history.csv"):
-        file = open("history.csv", "a")
+    if not os.path.isfile(TODO.HISTPTR):
+        file = open(TODO.HISTPTR, "a")
         file.write("datetime,title,comment,notes\n")
         file.close()
-    file = open("history.csv", "a")
+    file = open(TODO.HISTPTR, "a")
     log = f"{task.datetime},{task.title},{task.comment},"
     for note in task.notes:
         log += f"{note};"
