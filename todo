@@ -43,7 +43,7 @@ def PrintLogo(ver, cred, lic):
 # ======================================================================================================================
 
 class TODO:
-    VERSION     = "2.6.10"
+    VERSION     = "2.7.1"
     CREDITS     = "luks"
     LICENSE     = "GPL3.0"
 
@@ -164,7 +164,7 @@ def MoveTask(args):
 def RemoveTask(args):
     if args[-1] == "?":
         HowTo("remove <index>","remove 0","Removes task 0")
-        HowTo("remove *","remve *","Removes every non-recurring checked task")
+        HowTo("remove *","remove *","Removes every non-recurring checked task")
         return
 
     if args[-1] == "*":
@@ -179,6 +179,20 @@ def RemoveTask(args):
     SaveToHistory(TODO.TASKS[index])
     del TODO.TASKS[index]
     UpdateIndeces()
+
+
+def RenameTask(args):
+    if args[-1] == "?":
+        HowTo("rename <index>","rename 0","Renames task 0")
+        return
+
+    index = GetTask(args)
+    if index < 0:
+        return
+
+    print(f"Rename task {index}")
+    print(TODO.TASKS[index].title)
+    TODO.TASKS[index].title = input("New Name: ")
 
 # ======================================================================================================================
 
@@ -458,6 +472,7 @@ def Usage():
     print(f"    prio                change priority of task")
     print(f"    move                move position of task")
     print(f"    remove              remove task")
+    print(f"    rename              rename task")
     print(f"    due                 set due date")
     print(f"    rec                 set recurring")
     print(f"    note                add note")
@@ -597,6 +612,9 @@ def ParseCommand(cmd):
         case "remove":
             RemoveTask(cmd)
 
+        case "rename":
+            RenameTask(cmd)
+    
         case "due":
             DueTask(cmd)
 
